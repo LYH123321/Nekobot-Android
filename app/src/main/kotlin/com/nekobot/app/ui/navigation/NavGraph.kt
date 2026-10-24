@@ -108,6 +108,7 @@ import com.nekobot.app.ui.screens.tokens.RoutingHistoryScreen
 import com.nekobot.app.ui.screens.worldbook.WorldBookDetailScreen
 import com.nekobot.app.ui.screens.worldbook.WorldBookMatchDebugScreen
 import com.nekobot.app.ui.screens.worldbook.WorldBooksScreen
+import com.nekobot.app.ui.screens.preset.PresetManagerScreen
 import com.nekobot.app.ui.screens.extensions.ExtensionsScreen
 import com.nekobot.app.ui.screens.extensions.HooksScreen
 import com.nekobot.app.ui.screens.extensions.TaskCenterScreen
@@ -880,6 +881,9 @@ fun NekobotNavGraph() {
                     onBack = { navController.popBackStack() },
                     onNavigate = { route -> navController.navigate(route) }
                 )
+            }
+            composable(Routes.PRESET_MANAGER) {
+                PresetManagerScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.ACHIEVEMENTS) {
                 AchievementsScreen(onBack = { navController.popBackStack() })

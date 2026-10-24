@@ -3,6 +3,7 @@ package com.nekobot.app.ui.screens.preset
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -35,6 +36,7 @@ fun PresetManagerScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf(loadStatus()) }
     var message by remember { mutableStateOf<String?>(null) }
+    var viewing by remember { mutableStateOf<PresetManager.PresetBlock?>(null) }
 
     fun refresh() { status = loadStatus(); message = null }
 
@@ -95,7 +97,7 @@ fun PresetManagerScreen(onBack: () -> Unit) {
             Text("酒馆预设", style = MaterialTheme.typography.titleMedium)
             Card {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(if (status.presetActive) "当前预设：${status.presetName}（${status.presetBlocks} 块）" else "未启用预设")
+                    Text(if (status.presetActive) "当前预设：${status.presetName}（${status.presetBlocks} 块，启用 ${enabledCount()}）" else "未启用预设")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { presetPicker.launch(arrayOf("application/json", "text/*", "*/*")) }) {
                             Icon(Icons.Filled.UploadFile, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("导入预设")
@@ -109,7 +111,49 @@ fun PresetManagerScreen(onBack: () -> Unit) {
                             }) { Text("停用") }
                         }
                     }
-                    Text("支持 Foreverse blocks[] 与 SillyTavern prompts[] 两种格式；启用块将按顺序注入每次请求。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("支持 Foreverse blocks[] 与 SillyTavern prompts[] 两种格式；点块名查看内容，开关单独启停每个块。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            // ---- 块列表（开关 + 查看内容）----
+            if (status.presetActive) {
+                Text("块列表", style = MaterialTheme.typography.titleMedium)
+                PresetManager.activePreset?.blocks?.forEach { b ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                    .clickable { viewing = b },
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    (if (b.marker) "[marker] " else "") + (if (b.name.isNotBlank()) b.name else b.identifier),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                                if (!b.marker && b.content.isNotBlank()) {
+                                    Text(
+                                        b.content.take(60).replace('\n', ' ') + if (b.content.length > 60) "…" else "",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = b.enabled,
+                                onCheckedChange = { on ->
+                                    toggleBlock(b.identifier, on)
+                                    refresh()
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -135,6 +179,23 @@ fun PresetManagerScreen(onBack: () -> Unit) {
                 }
             }
         }
+
+        // ---- 块内容查看弹窗 ----
+        viewing?.let { b ->
+            AlertDialog(
+                onDismissRequest = { viewing = null },
+                title = { Text(if (b.name.isNotBlank()) b.name else b.identifier) },
+                text = {
+                    Text(
+                        if (b.marker) "[marker 块，由原生管线处理]\nidentifier: ${b.identifier}" else b.content.ifBlank { "（空内容）" },
+                        fontSize = 13.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewing = null }) { Text("关闭") }
+                }
+            )
+        }
     }
 }
 
@@ -152,9 +213,26 @@ private fun loadStatus(): Status {
 }
 
 private fun importRulesVia(rm: RegexManager, json: String): Result<Int> {
-    val r = rm.parse(json)
+val r = rm.parse(json)
     return if (r.isSuccess) {
         r.getOrThrow().forEach { rm.add(it) }
         Result.success(r.getOrThrow().size)
     } else Result.failure(r.exceptionOrNull()!!)
+}
+/** 当前启用块数。 */
+private fun enabledCount(): Int =
+    (PresetManager.activePreset ?: loadStatusRestored())?.blocks?.count { !it.marker && it.enabled } ?: 0
+private fun loadStatusRestored() =
+    PresetManager.activePreset ?: ServiceContainer.appContext
+        ?.getSharedPreferences("nekobot_preset", 0)?.getString("active_preset", null)
+        ?.let { PresetManager.parse(it).getOrNull()?.also { PresetManager.activate(it) } }
+/** 开关块并持久化。 */
+private fun toggleBlock(identifier: String, enable: Boolean) {
+    val preset = loadStatusRestored() ?: return
+    val updated = preset.copy(blocks = preset.blocks.map {
+        if (it.identifier == identifier) it.copy(enabled = enable) else it
+    })
+    PresetManager.activate(updated)
+    ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+        ?.edit()?.putString("active_preset", PresetManager.serialize(updated))?.apply()
 }

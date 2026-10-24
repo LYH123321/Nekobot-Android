@@ -43,6 +43,14 @@ object RegexManager {
 
     fun remove(id: String): Boolean = rules.removeIf { it.id == id }
 
+    /** 启停指定规则（按 id 精确匹配）。 */
+    fun setEnabled(id: String, enabled: Boolean): Boolean {
+        val i = rules.indexOfFirst { it.id == id }
+        if (i < 0) return false
+        rules[i] = rules[i].copy(enabled = enabled)
+        return true
+    }
+
     /** 解析单条或数组 JSON（FO 单条 / ST regex 数组都支持）。 */
     fun parse(json: String): Result<List<RegexRule>> {
         return try {

@@ -114,6 +114,8 @@ private val requiredToolArguments = mapOf(
     "subagent_pause" to setOf("task_id"),
     "subagent_kill" to setOf("task_id"),
     "exec_command" to setOf("command"),
+    "shizuku_shell" to setOf("command"),
+    "shizuku_status" to emptySet(),
     "file_read" to setOf("path"),
     "file_write" to setOf("path", "content"),
     "file_edit" to setOf("path", "old_string", "new_string"),

@@ -10,6 +10,10 @@
     <string name="tool_name_download_file">下载文件</string>
     <string name="tool_name_browser_use">浏览器使用</string>
     <string name="tool_name_exec_command">Linux 沙盒执行命令</string>
+    <string name="tool_name_shizuku_shell">Shizuku 特权命令</string>
+    <string name="tool_name_shizuku_status">检查 Shizuku 状态</string>
+    <string name="tool_desc_shizuku_shell">通过 Shizuku 以 ADB/Root 特权执行系统 shell 命令（input tap、am start、pm install 等），权限接近 adb。需设备已启动 Shizuku 并授权本应用。</string>
+    <string name="tool_desc_shizuku_status">检查 Shizuku 服务运行与授权状态。</string>
     <string name="tool_name_shell_job">查询或终止后台命令</string>
     <string name="tool_name_file_read">读取沙盒文件</string>
     <string name="tool_name_file_write">写入沙盒文件</string>

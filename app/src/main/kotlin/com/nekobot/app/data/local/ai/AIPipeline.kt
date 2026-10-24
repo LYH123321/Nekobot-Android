@@ -329,6 +329,15 @@ class AIPipeline {
                     ?.getString("active_preset", null)
                 if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
             }
+            // 恢复持久化的正则规则（regex_toggle/regex_remove 保存的状态）
+            val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+            if (rm.all().isEmpty()) {
+                val savedRules = ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                    ?.getString("regex_rules", null)
+                if (!savedRules.isNullOrBlank()) {
+                    rm.parse(savedRules).getOrNull()?.forEach { rm.add(it) }
+                }
+            }
             val preset = pm.activePreset ?: return@run
             if (preset != null) {
             var p = 5

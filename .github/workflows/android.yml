@@ -39,13 +39,7 @@ jobs:
             '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
             -Pkotlin.incremental=false \
             testDebugUnitTest
-      - name: Verify lint
-        run: |
-          ./gradlew --no-daemon --console=plain --stacktrace \
-            --max-workers=2 \
-            '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
-            -Pkotlin.incremental=false \
-            lintDebug
+      # Lint 检查已按需求移除（fork 自用版，只出包）
       - name: Verify debug build
         run: |
           ./gradlew --no-daemon --console=plain --stacktrace \
@@ -53,3 +47,8 @@ jobs:
             '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
             -Pkotlin.incremental=false \
             assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nekobot-apk
+          path: app/build/outputs/apk/debug/*.apk

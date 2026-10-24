@@ -47,7 +47,8 @@ object PresetManager {
         private set
 
     /** 解析 Foreverse / ST 预设 JSON。兼容 blocks[] 与 ST prompts[]+prompt_order 两种格式。 */
-    fun parse(json: String): Result<Preset> = try {
+    fun parse(json: String): Result<Preset> {
+        return try {
         val root = JsonParser.parseString(json).asJsonObject
         val name = root.get("name")?.takeIf { it.isJsonPrimitive }?.asString
             ?: root.get("presetName")?.takeIf { it.isJsonPrimitive }?.asString
@@ -106,8 +107,9 @@ object PresetManager {
         }
         if (blocks.isEmpty()) return Result.failure(IllegalArgumentException("预设里没有任何 block（blocks[] 或 prompts[] 都为空）"))
         Result.success(Preset(name, blocks))
-    } catch (e: Exception) {
-        Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /** 设为全局生效预设。 */

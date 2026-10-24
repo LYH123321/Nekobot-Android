@@ -475,6 +475,53 @@ object BuiltinTools {
             implementationJson = "{}"
         ),
         BuiltinToolSpec(
+            id = "preset_import",
+            category = "linux",
+            name = "导入酒馆式预设",
+            description = "导入酒馆（SillyTavern/Foreverse）Chat Completion 预设 JSON 并设为全局生效。支持 blocks[] 与 ST prompts[]+prompt_order 两种格式。预设的启用块将按顺序注入每次请求的 system prompt。导入成功后新会话即生效。",
+            parametersJson = params(
+                mapOf(
+                    "json" to mapOf("type" to "string", "description" to "预设 JSON 全文，形如 {\"name\":\"...\",\"blocks\":[...]}；含 marker:true 的块（chatHistory 等）会被忽略")
+                ),
+                listOf("json")
+            ),
+            implementationJson = "{\"requires_confirmation\":true}"
+        ),
+        BuiltinToolSpec(
+            id = "preset_status",
+            category = "linux",
+            name = "查看当前预设",
+            description = "查看当前全局生效的酒馆式预设与统计信息；未设置则返回提示。",
+            parametersJson = params(emptyMap(), emptyList()),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
+            id = "regex_import",
+            category = "linux",
+            name = "导入酒馆式正则",
+            description = "导入酒馆（SillyTavern/Foreverse）正则规则 JSON（单条或数组），对 AI 输出显示文本或上行用户消息做查找替换。字段：find（正则）、replace（支持 $1..$9 与 {{match}}）、placement（AI_OUTPUT/USER_INPUT）、markdownOnly。导入前会校验正则可编译。",
+            parametersJson = params(
+                mapOf(
+                    "json" to mapOf("type" to "string", "description" to "正则规则 JSON，单条 {\"id\",\"name\",\"find\",\"replace\",\"placement\":[]} 或数组 [...]")
+                ),
+                listOf("json")
+            ),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
+            id = "regex_test",
+            category = "linux",
+            name = "测试正则效果",
+            description = "把示例文本过一遍已导入的全部 AI_OUTPUT 正则，返回处理后的结果。写复杂正则时先用来验证，避免误删正文。",
+            parametersJson = params(
+                mapOf(
+                    "sample" to mapOf("type" to "string", "description" to "要测试的示例文本")
+                ),
+                listOf("sample")
+            ),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
             id = "file_read",
             category = "linux",
             name = "读取 Linux 工作区文件",

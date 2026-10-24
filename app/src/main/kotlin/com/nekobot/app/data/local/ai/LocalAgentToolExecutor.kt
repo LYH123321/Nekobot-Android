@@ -41,7 +41,14 @@ internal val localExecutableToolIds = setOf(
     "shizuku_status",
     "preset_import",
     "preset_status",
+    "preset_blocks",
+    "preset_block_view",
+    "preset_block_toggle",
+    "st_assets_scan",
     "regex_import",
+    "regex_rules",
+    "regex_toggle",
+    "regex_remove",
     "regex_test",
     "shell_job",
     "file_read",
@@ -437,8 +444,15 @@ internal class LocalAgentToolExecutor(
                 "shizuku_status" -> shizukuStatus()
                 "preset_import" -> presetImport(args)
                 "preset_status" -> presetStatus()
+                "preset_blocks" -> presetBlocks()
+                "preset_block_view" -> presetBlockView(args)
+                "preset_block_toggle" -> presetBlockToggle(args)
                 "regex_import" -> regexImport(args)
                 "regex_test" -> regexTest(args)
+                "regex_rules" -> regexRules()
+                "regex_toggle" -> regexToggle(args)
+                "regex_remove" -> regexRemove(args)
+                "st_assets_scan" -> stAssetsScan(args)
                 "shell_job" -> shellJobTool(args)
                 "file_read" -> readWorkspaceFile(args)
                 "file_write" -> writeLinuxWorkspaceFile(args)
@@ -1095,6 +1109,77 @@ internal class LocalAgentToolExecutor(
             )
         }
     }
+    /** 列出当前预设全部块（带内容预览），供 AI 排查块冲突。 */
+    private fun presetBlocks(): Map<String, Any> {
+        val pm = com.nekobot.app.data.local.ai.preset.PresetManager
+        if (pm.activePreset == null) {
+            val saved = ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                ?.getString("active_preset", null)
+            if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
+        }
+        val preset = pm.activePreset ?: return failure("当前没有生效的预设，先用 preset_import 导入")
+        return mapOf(
+            "success" to true,
+            "name" to preset.name,
+            "blocks" to preset.blocks.map { b ->
+                mapOf(
+                    "identifier" to b.identifier,
+                    "name" to b.name,
+                    "enabled" to b.enabled,
+                    "marker" to b.marker,
+                    "role" to b.role,
+                    "preview" to b.content.take(100).replace("\n", " ")
+                )
+            }
+        )
+    }
+    /** 查看指定块全文。 */
+    private fun presetBlockView(args: Map<String, Any>): Map<String, Any> {
+        val id = args.string("identifier") ?: return failure("缺少 identifier 参数")
+        val pm = com.nekobot.app.data.local.ai.preset.PresetManager
+        if (pm.activePreset == null) {
+            val saved = ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                ?.getString("active_preset", null)
+            if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
+        }
+        val preset = pm.activePreset ?: return failure("当前没有生效的预设")
+        val b = preset.blocks.firstOrNull { it.identifier == id || it.name == id }
+            ?: return failure("找不到块「$id」，可用 preset_blocks 查看全部 identifier")
+        return mapOf(
+            "success" to true,
+            "identifier" to b.identifier,
+            "name" to b.name,
+            "role" to b.role,
+            "enabled" to b.enabled,
+            "marker" to b.marker,
+            "content" to b.content
+        )
+    }
+    /** 开关指定块并持久化。 */
+    private fun presetBlockToggle(args: Map<String, Any>): Map<String, Any> {
+        val id = args.string("identifier") ?: return failure("缺少 identifier 参数")
+        val enable = args["enabled"] as? Boolean ?: return failure("缺少 enabled 参数（true 开 / false 关）")
+        val pm = com.nekobot.app.data.local.ai.preset.PresetManager
+        if (pm.activePreset == null) {
+            val saved = ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                ?.getString("active_preset", null)
+            if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
+        }
+        val preset = pm.activePreset ?: return failure("当前没有生效的预设")
+        val b = preset.blocks.firstOrNull { it.identifier == id || it.name == id }
+            ?: return failure("找不到块「$id」，可用 preset_blocks 查看全部 identifier")
+        val updated = preset.copy(blocks = preset.blocks.map {
+            if (it.identifier == b.identifier) it.copy(enabled = enable) else it
+        })
+        pm.activate(updated)
+        ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+            ?.edit()?.putString("active_preset", pm.serialize(updated))?.apply()
+        return mapOf(
+            "success" to true,
+            "message" to "块「${b.name.ifBlank { b.identifier }}」已${if (enable) "启用" else "停用"}并持久化",
+            "stats" to pm.stats(updated)
+        )
+    }
 
     private fun regexImport(args: Map<String, Any>): Map<String, Any> {
         val json = args.string("json") ?: return failure("缺少 json 参数")
@@ -1120,6 +1205,123 @@ internal class LocalAgentToolExecutor(
             "success" to true,
             "result" to rm.test(sample),
             "stats" to rm.stats()
+        )
+    }
+    /** 列出全部正则规则（含启停状态）。 */
+    private fun regexRules(): Map<String, Any> {
+        val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+        return mapOf(
+            "success" to true,
+            "count" to rm.all().size,
+            "rules" to rm.all().map {
+                mapOf(
+                    "id" to it.id,
+                    "name" to it.name,
+                    "enabled" to it.enabled,
+                    "placement" to it.placement,
+                    "markdown_only" to it.markdownOnly,
+                    "find" to it.find.take(120),
+                    "replace" to it.replace.take(60)
+                )
+            }
+        )
+    }
+    /** 启停某条正则规则。 */
+    private fun regexToggle(args: Map<String, Any>): Map<String, Any> {
+        val id = args.string("id") ?: return failure("缺少 id 参数")
+        val enable = args["enabled"] as? Boolean ?: return failure("缺少 enabled 参数（true 开 / false 关）")
+        val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+        return if (rm.setEnabled(id, enable)) {
+            persistRegexRules()
+            mapOf("success" to true, "message" to "规则「$id」已${if (enable) "启用" else "停用"}并持久化", "stats" to rm.stats())
+        } else failure("找不到规则「$id」，可用 regex_rules 查看全部 id")
+    }
+    /** 删除某条正则规则。 */
+    private fun regexRemove(args: Map<String, Any>): Map<String, Any> {
+        val id = args.string("id") ?: return failure("缺少 id 参数")
+        val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+        return if (rm.remove(id)) {
+            persistRegexRules()
+            mapOf("success" to true, "message" to "规则「$id」已删除", "stats" to rm.stats())
+        } else failure("找不到规则「$id」")
+    }
+    /** 把当前正则规则持久化到 SharedPreferences，重启后恢复。 */
+    private fun persistRegexRules() {
+        val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+        val gson = com.google.gson.Gson()
+        val arr = com.google.gson.JsonArray()
+        rm.all().forEach { r ->
+            val o = com.google.gson.JsonObject().apply {
+                addProperty("id", r.id)
+                addProperty("name", r.name)
+                addProperty("find", r.find)
+                addProperty("replace", r.replace)
+                add("placement", gson.toJsonTree(r.placement))
+                addProperty("markdownOnly", r.markdownOnly)
+                addProperty("promptOnly", r.promptOnly)
+                addProperty("disabled", !r.enabled)
+            }
+            arr.add(o)
+        }
+        ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+            ?.edit()?.putString("regex_rules", gson.toJson(arr))?.apply()
+    }
+    /**
+     * 全盘智能扫描：在 /sdcard 下找预设 / 正则 / 世界书 JSON 文件。
+     * 返回文件清单（path + type + name），AI 再用 file_read 读内容、preset_import/regex_import 导入。
+     */
+    private fun stAssetsScan(args: Map<String, Any>): Map<String, Any> {
+        val typeFilter = args.string("type").ifBlank { "all" }   // preset / regex / worldbook / all
+        val roots = listOf(File("/sdcard/Download"), File("/sdcard/Documents"), File("/sdcard"))
+        val found = mutableListOf<Map<String, Any>>()
+        val seen = HashSet<String>()
+        fun classify(f: File): String? {
+            val n = f.name.lowercase()
+            if (!n.endsWith(".json") && !n.endsWith(".jsonl")) return null
+            return try {
+                val text = f.readText().take(60000)
+                val el = com.google.gson.JsonParser.parseString(text)
+                val obj = if (el.isJsonObject) el.asJsonObject else return when {
+                    el.isJsonArray && n.endsWith(".json") -> "regex"
+                    else -> null
+                }
+                when {
+                    obj.has("blocks") || obj.has("prompts") || obj.has("prompt_order") -> "preset"
+                    obj.has("entries") || obj.has("world_info") || obj.has("worldInfo") -> "worldbook"
+                    obj.has("findRegex") || obj.has("find") && obj.has("replace") ||
+                        obj.has("scripts") || obj.has("regex_scripts") -> "regex"
+                    else -> if (n.contains("regex")) "regex" else if (n.contains("world") || n.contains("lore")) "worldbook" else null
+                }
+            } catch (e: Exception) { null }
+        }
+        fun walk(dir: File, depth: Int) {
+            if (depth > 6 || found.size > 200) return
+            val list = dir.listFiles() ?: return
+            for (f in list) {
+                if (f.name.startsWith(".")) continue
+                if (f.isDirectory) {
+                    // 跳过大的无关目录
+                    if (f.name in setOf("Android", "Pictures", "DCIM", "Movies", "Music", "Podcasts", "Audiobooks", "fonts", "Ringtones", "Alarms", "Notifications", "Download/BrowserCache")) continue
+                    walk(f, depth + 1)
+                } else {
+                    if (!seen.add(f.absolutePath)) continue
+                    val t = classify(f) ?: continue
+                    if (typeFilter != "all" && t != typeFilter) continue
+                    found.add(mapOf(
+                        "path" to f.absolutePath,
+                        "type" to t,
+                        "size_kb" to (f.length() / 1024).toInt()
+                    ))
+                }
+            }
+        }
+        roots.forEach { if (it.exists()) walk(it, 0) }
+        return mapOf(
+            "success" to true,
+            "count" to found.size,
+            "filter" to typeFilter,
+            "files" to found,
+            "hint" to "用 file_read 读 path 内容后，preset 用 preset_import 导入，regex 用 regex_import，世界书用 db_upsert_world_book 系列工具导入"
         )
     }
 

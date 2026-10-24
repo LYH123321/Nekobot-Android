@@ -298,6 +298,8 @@ internal fun toolNameResId(id: String): Int = when (id) {
     "download_file" -> R.string.tool_name_download_file
     "browser_use" -> R.string.tool_name_browser_use
     "exec_command" -> R.string.tool_name_exec_command
+    "shizuku_shell" -> R.string.tool_name_shizuku_shell
+    "shizuku_status" -> R.string.tool_name_shizuku_status
     "file_read" -> R.string.tool_name_file_read
     "file_write" -> R.string.tool_name_file_write
     "file_edit" -> R.string.tool_name_file_edit
@@ -430,6 +432,8 @@ internal fun toolDescResId(id: String): Int = when (id) {
     "download_file" -> R.string.tool_desc_download_file
     "browser_use" -> R.string.tool_desc_browser_use
     "exec_command" -> R.string.tool_desc_exec_command
+    "shizuku_shell" -> R.string.tool_desc_shizuku_shell
+    "shizuku_status" -> R.string.tool_desc_shizuku_status
     "shell_job" -> R.string.tool_desc_shell_job
     "file_read" -> R.string.tool_desc_file_read
     "file_write" -> R.string.tool_desc_file_write

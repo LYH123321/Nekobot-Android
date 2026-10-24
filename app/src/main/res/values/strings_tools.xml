@@ -14,6 +14,14 @@
     <string name="tool_name_shizuku_status">检查 Shizuku 状态</string>
     <string name="tool_desc_shizuku_shell">通过 Shizuku 以 ADB/Root 特权执行系统 shell 命令（input tap、am start、pm install 等），权限接近 adb。需设备已启动 Shizuku 并授权本应用。</string>
     <string name="tool_desc_shizuku_status">检查 Shizuku 服务运行与授权状态。</string>
+    <string name="tool_name_preset_import">导入酒馆预设</string>
+    <string name="tool_desc_preset_import">导入酒馆式 Chat Completion 预设 JSON 并设为全局生效，支持 blocks 与 ST prompts 格式。</string>
+    <string name="tool_name_preset_status">查看当前预设</string>
+    <string name="tool_desc_preset_status">查看当前全局生效的酒馆式预设与块统计。</string>
+    <string name="tool_name_regex_import">导入酒馆正则</string>
+    <string name="tool_desc_regex_import">导入酒馆式正则规则（查找替换），作用于 AI 输出显示或上行用户消息。</string>
+    <string name="tool_name_regex_test">测试正则效果</string>
+    <string name="tool_desc_regex_test">用示例文本试跑已导入的正则规则，验证效果。</string>
     <string name="tool_name_shell_job">查询或终止后台命令</string>
     <string name="tool_name_file_read">读取沙盒文件</string>
     <string name="tool_name_file_write">写入沙盒文件</string>

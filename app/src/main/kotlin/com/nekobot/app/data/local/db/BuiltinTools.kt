@@ -453,6 +453,28 @@ object BuiltinTools {
             implementationJson = "{\"requires_confirmation\":true,\"ttl_seconds\":600}"
         ),
         BuiltinToolSpec(
+            id = "shizuku_shell",
+            category = "linux",
+            name = "Shizuku 特权命令",
+            description = "通过 Shizuku 以 ADB/Root 特权执行系统 shell 命令，可直接调用 input tap、am start、pm install、pm grant、settings 等系统命令。与 exec_command（Alpine 沙盒）不同：这是真实 Android 系统 shell，权限接近 adb。使用前可用 shizuku_status 检查状态。危险命令（pm uninstall、rm 系统文件等）务必先确认。",
+            parametersJson = params(
+                mapOf(
+                    "command" to mapOf("type" to "string", "description" to "要执行的特权 shell 命令，如 'input tap 500 800' 或 'pm grant com.xx android.permission.XX'"),
+                    "timeout" to mapOf("type" to "integer", "description" to "超时秒数，范围 1-120，默认 30")
+                ),
+                listOf("command")
+            ),
+            implementationJson = "{\"requires_confirmation\":true,\"ttl_seconds\":300}"
+        ),
+        BuiltinToolSpec(
+            id = "shizuku_status",
+            category = "linux",
+            name = "检查 Shizuku 状态",
+            description = "检查 Shizuku 服务是否运行、本应用是否已获授权。调用 shizuku_shell 失败时先用它诊断。",
+            parametersJson = params(emptyMap(), emptyList()),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
             id = "file_read",
             category = "linux",
             name = "读取 Linux 工作区文件",

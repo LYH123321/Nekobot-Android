@@ -63,7 +63,7 @@ fun PresetManagerScreen(onBack: () -> Unit) {
             try {
                 val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
                 val r = importRulesVia(RegexManager, json)
-                message = if (r.isSuccess) "已导入 ${r.getOrThrow().size} 条正则规则" else "解析失败：${r.exceptionOrNull()?.message}"
+                message = if (r.isSuccess) "已导入 ${r.getOrThrow()} 条正则规则" else "解析失败：${r.exceptionOrNull()?.message}"
             } catch (e: Exception) {
                 message = "读取失败：${e.message}"
             }

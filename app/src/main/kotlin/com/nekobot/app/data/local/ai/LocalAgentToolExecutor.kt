@@ -37,6 +37,8 @@ internal val localExecutableToolIds = setOf(
     "grep",
     "glob",
     "exec_command",
+    "shizuku_shell",
+    "shizuku_status",
     "shell_job",
     "file_read",
     "file_write",
@@ -427,6 +429,8 @@ internal class LocalAgentToolExecutor(
                 "grep" -> grepWorkspaceTool(args)
                 "glob" -> globWorkspaceTool(args)
                 "exec_command" -> execCommand(args)
+                "shizuku_shell" -> shizukuShell(args)
+                "shizuku_status" -> shizukuStatus()
                 "shell_job" -> shellJobTool(args)
                 "file_read" -> readWorkspaceFile(args)
                 "file_write" -> writeLinuxWorkspaceFile(args)
@@ -1015,6 +1019,31 @@ internal class LocalAgentToolExecutor(
             "file_count" to outcome.files.size,
             "truncated" to outcome.truncated,
             "files" to outcome.files.map { (path, size) -> mapOf("path" to path, "size" to size) }
+        )
+    }
+
+    private suspend fun shizukuShell(args: Map<String, Any>): Map<String, Any> {
+        val command = args["command"] as? String
+            ?: return failure("缺少 command 参数")
+        val timeoutSec = (args["timeout"] as? Number)?.toInt()?.coerceIn(1, 120) ?: 30
+        val result = com.nekobot.app.data.local.ai.shizuku.ShizukuShell.run(command, timeoutSec)
+        return if (result.isSuccess) {
+            mapOf(
+                "success" to true,
+                "exit_code" to result.exitCode,
+                "output" to result.output.ifBlank { "(无输出)" }
+            )
+        } else {
+            failure(result.error.ifBlank { "命令失败，exit=${result.exitCode}" },
+                "exit_code" to result.exitCode, "output" to result.output)
+        }
+    }
+
+    private fun shizukuStatus(): Map<String, Any> {
+        val status = com.nekobot.app.data.local.ai.shizuku.ShizukuShell.statusText()
+        return mapOf(
+            "success" to (status == "ok"),
+            "status" to status
         )
     }
 

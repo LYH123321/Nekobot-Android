@@ -302,6 +302,13 @@ internal fun toolNameResId(id: String): Int = when (id) {
     "shizuku_status" -> R.string.tool_name_shizuku_status
             "preset_import" -> R.string.tool_name_preset_import
             "preset_status" -> R.string.tool_name_preset_status
+            "preset_blocks" -> R.string.tool_name_preset_blocks
+            "preset_block_view" -> R.string.tool_name_preset_block_view
+            "preset_block_toggle" -> R.string.tool_name_preset_block_toggle
+            "st_assets_scan" -> R.string.tool_name_st_assets_scan
+            "regex_rules" -> R.string.tool_name_regex_rules
+            "regex_toggle" -> R.string.tool_name_regex_toggle
+            "regex_remove" -> R.string.tool_name_regex_remove
             "regex_import" -> R.string.tool_name_regex_import
             "regex_test" -> R.string.tool_name_regex_test
     "file_read" -> R.string.tool_name_file_read
@@ -440,6 +447,13 @@ internal fun toolDescResId(id: String): Int = when (id) {
     "shizuku_status" -> R.string.tool_desc_shizuku_status
             "preset_import" -> R.string.tool_desc_preset_import
             "preset_status" -> R.string.tool_desc_preset_status
+            "preset_blocks" -> R.string.tool_desc_preset_blocks
+            "preset_block_view" -> R.string.tool_desc_preset_block_view
+            "preset_block_toggle" -> R.string.tool_desc_preset_block_toggle
+            "st_assets_scan" -> R.string.tool_desc_st_assets_scan
+            "regex_rules" -> R.string.tool_desc_regex_rules
+            "regex_toggle" -> R.string.tool_desc_regex_toggle
+            "regex_remove" -> R.string.tool_desc_regex_remove
             "regex_import" -> R.string.tool_desc_regex_import
             "regex_test" -> R.string.tool_desc_regex_test
     "shell_job" -> R.string.tool_desc_shell_job

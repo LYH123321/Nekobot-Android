@@ -300,6 +300,10 @@ internal fun toolNameResId(id: String): Int = when (id) {
     "exec_command" -> R.string.tool_name_exec_command
     "shizuku_shell" -> R.string.tool_name_shizuku_shell
     "shizuku_status" -> R.string.tool_name_shizuku_status
+            "preset_import" -> R.string.tool_name_preset_import
+            "preset_status" -> R.string.tool_name_preset_status
+            "regex_import" -> R.string.tool_name_regex_import
+            "regex_test" -> R.string.tool_name_regex_test
     "file_read" -> R.string.tool_name_file_read
     "file_write" -> R.string.tool_name_file_write
     "file_edit" -> R.string.tool_name_file_edit
@@ -434,6 +438,10 @@ internal fun toolDescResId(id: String): Int = when (id) {
     "exec_command" -> R.string.tool_desc_exec_command
     "shizuku_shell" -> R.string.tool_desc_shizuku_shell
     "shizuku_status" -> R.string.tool_desc_shizuku_status
+            "preset_import" -> R.string.tool_desc_preset_import
+            "preset_status" -> R.string.tool_desc_preset_status
+            "regex_import" -> R.string.tool_desc_regex_import
+            "regex_test" -> R.string.tool_desc_regex_test
     "shell_job" -> R.string.tool_desc_shell_job
     "file_read" -> R.string.tool_desc_file_read
     "file_write" -> R.string.tool_desc_file_write

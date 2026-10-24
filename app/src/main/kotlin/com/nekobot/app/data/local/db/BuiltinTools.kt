@@ -496,6 +496,89 @@ object BuiltinTools {
             implementationJson = "{}"
         ),
         BuiltinToolSpec(
+            id = "preset_blocks",
+            category = "linux",
+            name = "列出预设全部块",
+            description = "列出当前预设的全部块（identifier、名称、启用状态、role、内容前100字预览），用于排查块冲突或挑选要开关的块。",
+            parametersJson = params(emptyMap(), emptyList()),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
+            id = "preset_block_view",
+            category = "linux",
+            name = "查看预设块全文",
+            description = "查看当前预设中指定块的完整内容，用于核对两块文字是否互相矛盾。",
+            parametersJson = params(
+                mapOf(
+                    "identifier" to mapOf("type" to "string", "description" to "块 identifier 或块名称")
+                ),
+                listOf("identifier")
+            ),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
+            id = "preset_block_toggle",
+            category = "linux",
+            name = "启停预设块",
+            description = "单独启用或停用当前预设中的某个块并持久化（重启保留），无需重新导入 JSON。",
+            parametersJson = params(
+                mapOf(
+                    "identifier" to mapOf("type" to "string", "description" to "块 identifier 或块名称"),
+                    "enabled" to mapOf("type" to "boolean", "description" to "true 启用 / false 停用")
+                ),
+                listOf("identifier", "enabled")
+            ),
+            implementationJson = "{\"requires_confirmation\":true}"
+        ),
+        BuiltinToolSpec(
+            id = "st_assets_scan",
+            category = "linux",
+            name = "扫描酒馆资产文件",
+            description = "全盘智能扫描 /sdcard（Download/Documents 优先）中的酒馆资产 JSON：按内容识别预设（blocks/prompts）、世界书（entries/world_info）、正则（findRegex/find+replace）。返回 path+type+大小清单，AI 再用 file_read 读取并用 preset_import / regex_import / db_upsert_world_book 导入。",
+            parametersJson = params(
+                mapOf(
+                    "type" to mapOf("type" to "string", "description" to "过滤类型：preset / regex / worldbook / all（默认 all）")
+                ),
+                emptyList()
+            ),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
+            id = "regex_rules",
+            category = "linux",
+            name = "列出正则规则",
+            description = "列出当前全部正则规则（id、名称、启用状态、placement、find/replace 预览），用于挑选要开关或删除的规则。",
+            parametersJson = params(emptyMap(), emptyList()),
+            implementationJson = "{}"
+        ),
+        BuiltinToolSpec(
+            id = "regex_toggle",
+            category = "linux",
+            name = "启停正则规则",
+            description = "单独启用或停用某条正则规则并持久化（重启保留），无需重新导入。",
+            parametersJson = params(
+                mapOf(
+                    "id" to mapOf("type" to "string", "description" to "规则 id（regex_rules 查看）"),
+                    "enabled" to mapOf("type" to "boolean", "description" to "true 启用 / false 停用")
+                ),
+                listOf("id", "enabled")
+            ),
+            implementationJson = "{\"requires_confirmation\":true}"
+        ),
+        BuiltinToolSpec(
+            id = "regex_remove",
+            category = "linux",
+            name = "删除正则规则",
+            description = "删除指定正则规则并持久化。",
+            parametersJson = params(
+                mapOf(
+                    "id" to mapOf("type" to "string", "description" to "规则 id（regex_rules 查看）")
+                ),
+                listOf("id")
+            ),
+            implementationJson = "{\"requires_confirmation\":true}"
+        ),
+        BuiltinToolSpec(
             id = "regex_import",
             category = "linux",
             name = "导入酒馆式正则",

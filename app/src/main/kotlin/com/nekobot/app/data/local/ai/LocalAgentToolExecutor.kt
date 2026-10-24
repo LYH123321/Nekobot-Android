@@ -39,6 +39,10 @@ internal val localExecutableToolIds = setOf(
     "exec_command",
     "shizuku_shell",
     "shizuku_status",
+    "preset_import",
+    "preset_status",
+    "regex_import",
+    "regex_test",
     "shell_job",
     "file_read",
     "file_write",
@@ -431,6 +435,10 @@ internal class LocalAgentToolExecutor(
                 "exec_command" -> execCommand(args)
                 "shizuku_shell" -> shizukuShell(args)
                 "shizuku_status" -> shizukuStatus()
+                "preset_import" -> presetImport(args)
+                "preset_status" -> presetStatus()
+                "regex_import" -> regexImport(args)
+                "regex_test" -> regexTest(args)
                 "shell_job" -> shellJobTool(args)
                 "file_read" -> readWorkspaceFile(args)
                 "file_write" -> writeLinuxWorkspaceFile(args)
@@ -1044,6 +1052,74 @@ internal class LocalAgentToolExecutor(
         return mapOf(
             "success" to (status == "ok"),
             "status" to status
+        )
+    }
+
+    private fun presetImport(args: Map<String, Any>): Map<String, Any> {
+        val json = args.string("json") ?: return failure("缺少 json 参数")
+        val pm = com.nekobot.app.data.local.ai.preset.PresetManager
+        val r = pm.parse(json)
+        return if (r.isSuccess) {
+            val preset = r.getOrThrow()
+            pm.activate(preset)
+            // 持久化：重启后恢复
+            ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                ?.edit()?.putString("active_preset", pm.serialize(preset))?.apply()
+            mapOf(
+                "success" to true,
+                "message" to "预设「${preset.name}」已导入并设为全局生效，新会话起按块顺序注入。",
+                "stats" to pm.stats(preset)
+            )
+        } else {
+            failure("预设解析失败：${r.exceptionOrNull()?.message}")
+        }
+    }
+
+    private fun presetStatus(): Map<String, Any> {
+        val pm = com.nekobot.app.data.local.ai.preset.PresetManager
+        // 惰性恢复
+        if (pm.activePreset == null) {
+            val saved = ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                ?.getString("active_preset", null)
+            if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
+        }
+        val preset = pm.activePreset
+        return if (preset == null) {
+            mapOf("success" to true, "active" to false, "message" to "当前没有生效的酒馆式预设")
+        } else {
+            mapOf(
+                "success" to true,
+                "active" to true,
+                "stats" to pm.stats(preset),
+                "blocks" to preset.blocks.map { mapOf("identifier" to it.identifier, "name" to it.name, "enabled" to it.enabled, "marker" to it.marker) }
+            )
+        }
+    }
+
+    private fun regexImport(args: Map<String, Any>): Map<String, Any> {
+        val json = args.string("json") ?: return failure("缺少 json 参数")
+        val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+        val r = rm.parse(json)
+        return if (r.isSuccess) {
+            val rules = r.getOrThrow()
+            rules.forEach { rm.add(it) }
+            mapOf(
+                "success" to true,
+                "message" to "已导入 ${rules.size} 条正则规则。",
+                "stats" to rm.stats()
+            )
+        } else {
+            failure("正则解析失败：${r.exceptionOrNull()?.message}")
+        }
+    }
+
+    private fun regexTest(args: Map<String, Any>): Map<String, Any> {
+        val sample = args.string("sample") ?: return failure("缺少 sample 参数")
+        val rm = com.nekobot.app.data.local.ai.preset.RegexManager
+        return mapOf(
+            "success" to true,
+            "result" to rm.test(sample),
+            "stats" to rm.stats()
         )
     }
 

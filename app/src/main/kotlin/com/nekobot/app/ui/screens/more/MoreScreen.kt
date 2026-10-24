@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Palette
@@ -207,6 +208,17 @@ fun MoreScreen(
                     title = stringResource(R.string.more_state_history),
                     desc = stringResource(R.string.more_state_history_desc),
                     onClick = { onNavigate("state_history") }
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 52.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                )
+                MoreRow(
+                    icon = Icons.Filled.Tune,
+                    tint = MaterialTheme.colorScheme.primary,
+                    title = "预设与正则",
+                    desc = "导入酒馆预设 / 正则脚本，启用后自动注入对话",
+                    onClick = { onNavigate("preset_manager") }
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(start = 52.dp),

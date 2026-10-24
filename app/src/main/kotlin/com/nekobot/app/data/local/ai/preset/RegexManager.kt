@@ -44,7 +44,8 @@ object RegexManager {
     fun remove(id: String): Boolean = rules.removeIf { it.id == id }
 
     /** 解析单条或数组 JSON（FO 单条 / ST regex 数组都支持）。 */
-    fun parse(json: String): Result<List<RegexRule>> = try {
+    fun parse(json: String): Result<List<RegexRule>> {
+        return try {
         val el = JsonParser.parseString(json)
         val arr = when {
             el.isJsonArray -> el.asJsonArray
@@ -94,8 +95,9 @@ object RegexManager {
         }
         if (out.isEmpty()) return Result.failure(IllegalArgumentException("没有解析到任何规则"))
         Result.success(out)
-    } catch (e: Exception) {
-        Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /** 对文本应用指定作用域的全部规则。 */
@@ -125,7 +127,7 @@ object RegexManager {
     private fun rejigDollarGroups(template: String, m: MatchResult): String {
         var out = template
         for (i in 1..9) {
-            val group = m.groups.getOrNull(i)?.value ?: ""
+            val group = m.groups[i]?.value ?: ""
             out = out.replace("$$i", group)
         }
         return out

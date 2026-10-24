@@ -329,7 +329,8 @@ class AIPipeline {
                     ?.getString("active_preset", null)
                 if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
             }
-            val preset = pm.activePreset
+            val preset = pm.activePreset ?: return@run
+            if (preset != null) {
             var p = 5
             for (b in preset.blocks) {
                 if (b.marker || !b.enabled || b.content.isBlank()) continue
@@ -341,6 +342,7 @@ class AIPipeline {
                     scope = "session"
                 )
                 p++
+            }
             }
         }
         // 用户输入正则（USER_INPUT placement）改写上行历史中的用户消息

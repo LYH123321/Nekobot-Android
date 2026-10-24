@@ -320,6 +320,42 @@ class AIPipeline {
         if (ctx.knowledgeText.isNotEmpty()) {
             ctx.promptStack.add("knowledge.rag", ctx.knowledgeText, priority = PromptStack.Priority.KNOWLEDGE_RAG)
         }
+        // 酒馆式预设注入 → PromptStack（PresetManager 全局预设的启用 blocks）
+        run {
+            val pm = com.nekobot.app.data.local.ai.preset.PresetManager
+            if (pm.activePreset == null) {
+                val saved = ServiceContainer.appContext?.getSharedPreferences("nekobot_preset", 0)
+                    ?.getString("active_preset", null)
+                if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
+            }
+            val preset = pm.activePreset ?: return@run
+            var p = 5
+            for (b in preset.blocks) {
+                if (b.marker || !b.enabled || b.content.isBlank()) continue
+                ctx.promptStack.add(
+                    "preset.${b.identifier}",
+                    b.content,
+                    priority = p,
+                    role = if (b.role == "developer") "developer" else "system",
+                    scope = "session"
+                )
+                p++
+            }
+        }
+        // 用户输入正则（USER_INPUT placement）改写上行历史中的用户消息
+        run {
+            val mapped = messagesForAi.map { m ->
+                if ((m["role"] as? String) == "user") {
+                    val c = m["content"] as? String
+                    if (c != null) {
+                        val transformed = com.nekobot.app.data.local.ai.preset.RegexManager.apply(c, "USER_INPUT")
+                        if (transformed != c) return@map m + mapOf("content" to transformed)
+                    }
+                }
+                m
+            }
+            messagesForAi = mapped
+        }
 
         // 角色运行时 before_turn
         phaseCharacterRuntimeBeforeTurn(ctx, callbacks)
@@ -1049,6 +1085,8 @@ class AIPipeline {
         ctx.finalContent = appendAgentFileReferences(ctx.finalContent, ctx.sentFileReferences)
         // send_sticker 同理：把表情 `[名称]` 追加到正文，聊天界面据此渲染表情原图。
         ctx.finalContent = appendAgentStickerReferences(ctx.finalContent, ctx.sentStickerNames)
+        // 酒馆式正则（AI_OUTPUT placement）：对 AI 回复显示文本应用查找替换
+        ctx.finalContent = com.nekobot.app.data.local.ai.preset.RegexManager.apply(ctx.finalContent, "AI_OUTPUT")
 
         // 流式消息处理
         if (ctx.metadata["streamed"] == true && ctx.streamedMessage != null) {

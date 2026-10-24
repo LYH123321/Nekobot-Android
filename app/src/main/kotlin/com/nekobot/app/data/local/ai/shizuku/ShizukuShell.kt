@@ -19,7 +19,8 @@ object ShizukuShell {
     }
 
     fun isPermissionGranted(): Boolean = try {
-        isAvailable() && Shizuku.checkSelfPermission() == Shizuku.PERMISSION_GRANTED
+        // 0 == PERMISSION_GRANTED
+        isAvailable() && Shizuku.checkSelfPermission() == 0
     } catch (e: Throwable) {
         false
     }
@@ -30,6 +31,15 @@ object ShizukuShell {
         else -> "ok"
     }
 
+    /** Shizuku.newProcess 为隐藏 API，通过反射调用。 */
+    private fun newProcess(cmd: Array<String>): Process? = try {
+        val method = Shizuku::class.java.getDeclaredMethod("newProcess", Array<String>::class.java, Array<String>::class.java, String::class.java)
+        method.isAccessible = true
+        method.invoke(null, cmd, null, null) as? Process
+    } catch (e: Throwable) {
+        null
+    }
+
     /**
      * 以 Shizuku 特权执行 shell 命令，返回 stdout+stderr 合并文本。
      * [timeoutSec] 秒未结束则强杀进程。
@@ -37,8 +47,9 @@ object ShizukuShell {
     fun run(command: String, timeoutSec: Int = 30): Result {
         if (!isAvailable()) return Result(1, "", "Shizuku 未运行：${statusText()}")
         if (!isPermissionGranted()) return Result(1, "", "Shizuku 未授权：${statusText()}")
+        val process = newProcess(arrayOf("sh", "-c", command))
+            ?: return Result(1, "", "Shizuku 无法创建进程（newProcess 不可用）")
         return try {
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
             val stdout = StringBuilder()
             val err = StringBuilder()
             val outReader = BufferedReader(InputStreamReader(process.inputStream))

@@ -1,6 +1,7 @@
 package com.nekobot.app.data.local.ai
 
 import java.time.Instant
+import com.nekobot.app.ServiceContainer
 import java.util.UUID
 import com.nekobot.app.R
 
@@ -328,7 +329,7 @@ class AIPipeline {
                     ?.getString("active_preset", null)
                 if (!saved.isNullOrBlank()) pm.parse(saved).getOrNull()?.let { pm.activate(it) }
             }
-            val preset = pm.activePreset ?: return@run
+            val preset = pm.activePreset
             var p = 5
             for (b in preset.blocks) {
                 if (b.marker || !b.enabled || b.content.isBlank()) continue

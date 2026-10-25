@@ -67,7 +67,7 @@ object WorldBookImporter {
             ?: "导入的世界书"
         val description = str(bookObj, "description") ?: str(root, "description")
 
-        val entriesEl: JsonElement? = bookObj.get("entries")
+        val entriesEl: JsonElement? = bookObj?.get("entries")
         val parsed = mutableListOf<ImportedEntry>()
         when {
             entriesEl != null && entriesEl.isJsonArray -> {
@@ -240,7 +240,8 @@ object WorldBookImporter {
 
     // ---------- JSON getter 工具 ----------
 
-    private fun str(o: JsonObject, vararg names: String): String? {
+    private fun str(o: JsonObject?, vararg names: String): String? {
+        if (o == null) return null
         for (n in names) {
             val el = o.get(n) ?: continue
             if (el.isJsonPrimitive && !el.asJsonPrimitive.isJsonNull) {
@@ -250,7 +251,8 @@ object WorldBookImporter {
         return null
     }
 
-    private fun bool(o: JsonObject, vararg names: String): Boolean? {
+    private fun bool(o: JsonObject?, vararg names: String): Boolean? {
+        if (o == null) return null
         for (n in names) {
             val el = o.get(n) ?: continue
             if (el.isJsonPrimitive) {
@@ -260,7 +262,8 @@ object WorldBookImporter {
         return null
     }
 
-    private fun int(o: JsonObject, vararg names: String): Int? {
+    private fun int(o: JsonObject?, vararg names: String): Int? {
+        if (o == null) return null
         for (n in names) {
             val el = o.get(n) ?: continue
             if (el.isJsonPrimitive) {

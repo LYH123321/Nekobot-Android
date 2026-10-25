@@ -1,5 +1,11 @@
 package com.nekobot.app.ui.screens.worldbook
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.ui.platform.LocalContext
+import com.nekobot.app.data.local.ai.WorldBookImporter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
 
@@ -77,6 +83,35 @@ class WorldBooksViewModel : com.nekobot.app.ui.BaseViewModel() {
         )
     }
 
+    /** 导入世界书 JSON（ST 独立世界书 / 角色卡内嵌书） */
+    fun importWorldBook(json: String) {
+        launchResult(
+            block = {
+                val imported = WorldBookImporter.fromJson(json)
+                val created = unified.createWorldBook(
+                    WorldBookRequest(name = imported.name, description = imported.description)
+                )
+                val bookId = (created as? com.nekobot.app.data.repository.Resource.Success)
+                    ?.data?.id
+                    ?: throw IllegalStateException("创建世界书失败")
+                for (e in imported.entries) {
+                    unified.createEntry(bookId, com.nekobot.app.data.model.WorldBookEntryRequest(
+                        keys = e.keys, content = e.content, comment = e.comment,
+                        enabled = e.enabled, constant = e.constant, selective = e.selective,
+                        insertionOrder = e.insertionOrder, priority = e.priority,
+                        position = e.position, caseSensitive = e.caseSensitive,
+                        matchMode = e.matchMode, displayIndex = e.displayIndex
+                    ))
+                }
+                com.nekobot.app.data.repository.Resource.Success(imported.entries.size)
+            },
+            onSuccess = { count ->
+                load()
+                showToast("导入成功：${'$'}{count} 条")
+            }
+        )
+    }
+
     /** 删除世界书 */
     fun delete(id: String) {
         launchResult(
@@ -130,6 +165,18 @@ fun WorldBooksScreen(
     onOpenBook: (String) -> Unit,
     onOpenMatchDebug: () -> Unit = {},
     viewModel: WorldBooksViewModel = viewModel()
+    val context = LocalContext.current
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+            }.onSuccess { json ->
+                if (json.isNotBlank()) viewModel.importWorldBook(json)
+            }
+        }
+    }
 ) {
     val books by viewModel.books.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
@@ -235,6 +282,14 @@ fun WorldBooksScreen(
                                 onClick = {
                                     showAddMenu = false
                                     showAiDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("导入 JSON") },
+                                leadingIcon = { Icon(Icons.Filled.UploadFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                onClick = {
+                                    showAddMenu = false
+                                    importLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
                                 }
                             )
                         }

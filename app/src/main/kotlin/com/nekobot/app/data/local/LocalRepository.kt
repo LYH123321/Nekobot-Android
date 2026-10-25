@@ -130,6 +130,7 @@ import com.nekobot.app.data.local.db.LocalTaskEntity
 import com.nekobot.app.data.local.db.LocalToolEntity
 import com.nekobot.app.data.local.db.LocalWorkflowEntity
 import com.nekobot.app.data.local.db.LocalWorldBookEntity
+import com.nekobot.app.data.local.ai.WorldBookImporter
 import com.nekobot.app.data.local.db.LocalWorldBookEntryEntity
 import com.nekobot.app.data.local.db.NekobotDatabase
 import com.nekobot.app.data.model.ApiKey
@@ -11312,7 +11313,54 @@ ${AiOutputLanguage.directive()}
                 else -> preset
             }
             // 保存到数据库（新建 id）
-            upsertCharacter(finalPreset.copy(id = null))
+            val saved = upsertCharacter(finalPreset.copy(id = null))
+
+            // 智能导入：内嵌世界书（ST v2/v3 character_book、Foreverse embedded_lorebook）
+            try {
+                WorldBookImporter.fromCharacterCard(normalizedJson)?.let { book ->
+                    val created = upsertWorldBook(
+                        WorldBook(
+                            id = null,
+                            name = book.name,
+                            description = book.description,
+                            characterIds = listOfNotNull(saved.id),
+                            enabled = true
+                        )
+                    )
+                    book.entries.forEach { e ->
+                        upsertEntry(created.id ?: "", WorldBookEntry(
+                            keys = e.keys,
+                            content = e.content,
+                            comment = e.comment,
+                            enabled = e.enabled,
+                            constant = e.constant,
+                            selective = e.selective,
+                            insertionOrder = e.insertionOrder,
+                            priority = e.priority,
+                            position = e.position,
+                            caseSensitive = e.caseSensitive,
+                            matchMode = e.matchMode,
+                            displayIndex = e.displayIndex
+                        ))
+                    }
+                }
+            } catch (_: Exception) {
+                // 内嵌世界书导入失败不影响角色卡本身
+            }
+
+            // 智能导入：内嵌正则（ST extensions.regex_scripts）
+            try {
+                runCatching { com.google.gson.JsonParser.parseString(normalizedJson).asJsonObject }
+                    .getOrNull()?.get("extensions")?.takeIf { it.isJsonObject }?.asJsonObject
+                    ?.get("regex_scripts")?.takeIf { it.isJsonArray }?.let { arr ->
+                        val rules = com.nekobot.app.data.local.ai.preset.RegexManager.parse(arr.toString())
+                        rules.getOrNull()?.forEach { com.nekobot.app.data.local.ai.preset.RegexManager.add(it) }
+                    }
+            } catch (_: Exception) {
+                // 内嵌正则导入失败不影响角色卡本身
+            }
+
+            saved
         }
 
     /**

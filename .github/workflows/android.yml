@@ -29,28 +29,25 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: gradle
-    # 之囪改佊 test / assemble 大旴 Gradle 修订場
-      # 验证生跃里应生闺为目生藏甛链消文半长度生。
       - name: Verify unit tests
         run: |
           ./gradlew --no-daemon --console=plain --stacktrace \
-              --max-workers=2 \
-              '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
-              -Pkotlin.incremental=false \
-              testDebugUnitTest
-      # Lint 检查已按需求移除（fork 苪用版，只凹包）
+            --max-workers=2 \
+            '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
+            -Pkotlin.incremental=false \
+            testDebugUnitTest
       - name: Verify debug build
         run: |
-           ./gradlew --no-daemon --console=plain --stacktrace \
-               --max-workers=2 \
-               '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
-               -Pkotlin.incremental=false \
-               assembleDebug
+          ./gradlew --no-daemon --console=plain --stacktrace \
+            --max-workers=2 \
+            '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
+            -Pkotlin.incremental=false \
+            assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-           name: nekobot-apk
-            path: app/build/outputs/apk/debug/*.apk
+          name: nekobot-apk
+          path: app/build/outputs/apk/debug/*.apk
       - name: Release APK
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2

@@ -5,7 +5,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-website:
@@ -29,26 +29,34 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: gradle
-      # 之前把 test / lint / assemble 放在同一条 Gradle 命令里，lint 分析与 dex 合并共用
-      # 一个 4G 堆的 daemon，导致 :app:packageDebug 在 ApkFlinger 里抛 OutOfMemoryError。
-      # 这里改为：分阶段调用（每阶段独立 daemon，结束后释放内存）+ 调大堆 + 限制并发 worker。
+    # 之囪改佊 test / assemble 大旴 Gradle 修订場
+      # 验证生跃里应生闺为目生藏甛链消文半长度生。
       - name: Verify unit tests
         run: |
           ./gradlew --no-daemon --console=plain --stacktrace \
-            --max-workers=2 \
-            '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
-            -Pkotlin.incremental=false \
-            testDebugUnitTest
-      # Lint 检查已按需求移除（fork 自用版，只出包）
+              --max-workers=2 \
+              '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
+              -Pkotlin.incremental=false \
+              testDebugUnitTest
+      # Lint 检查已按需求移除（fork 苪用版，只凹包）
       - name: Verify debug build
         run: |
-          ./gradlew --no-daemon --console=plain --stacktrace \
-            --max-workers=2 \
-            '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
-            -Pkotlin.incremental=false \
-            assembleDebug
+           ./gradlew --no-daemon --console=plain --stacktrace \
+               --max-workers=2 \
+               '-Dorg.gradle.jvmargs=-Xmx6g -Xss8m -Dfile.encoding=UTF-8' \
+               -Pkotlin.incremental=false \
+               assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: nekobot-apk
-          path: app/build/outputs/apk/debug/*.apk
+           name: nekobot-apk
+            path: app/build/outputs/apk/debug/*.apk
+      - name: Release APK
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ci-latest
+          name: CI Build
+          files: app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

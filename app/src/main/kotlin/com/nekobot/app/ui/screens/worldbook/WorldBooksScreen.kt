@@ -165,6 +165,7 @@ fun WorldBooksScreen(
     onOpenBook: (String) -> Unit,
     onOpenMatchDebug: () -> Unit = {},
     viewModel: WorldBooksViewModel = viewModel()
+) {
     val context = LocalContext.current
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -177,7 +178,6 @@ fun WorldBooksScreen(
             }
         }
     }
-) {
     val books by viewModel.books.collectAsStateWithLifecycle()
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()

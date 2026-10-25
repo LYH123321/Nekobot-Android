@@ -481,9 +481,10 @@ object BuiltinTools {
             description = "导入酒馆（SillyTavern/Foreverse）Chat Completion 预设 JSON 并设为全局生效。支持 blocks[] 与 ST prompts[]+prompt_order 两种格式。预设的启用块将按顺序注入每次请求的 system prompt。导入成功后新会话即生效。",
             parametersJson = params(
                 mapOf(
-                    "json" to mapOf("type" to "string", "description" to "预设 JSON 全文，形如 {\"name\":\"...\",\"blocks\":[...]}；含 marker:true 的块（chatHistory 等）会被忽略")
+                    "json" to mapOf("type" to "string", "description" to "预设 JSON 全文。若 JSON 较长或含大量引号，建议先 file_write 存到工作区再用 path 引用，避免转义出错"),
+                    "path" to mapOf("type" to "string", "description" to "工作区文件路径（如 /workspace/preset.json），与 json 二选一，文件内容为预设 JSON")
                 ),
-                listOf("json")
+                listOf()
             ),
             implementationJson = "{\"requires_confirmation\":true}"
         ),
@@ -585,9 +586,10 @@ object BuiltinTools {
             description = "导入酒馆（SillyTavern/Foreverse）正则规则 JSON（单条或数组），对 AI 输出显示文本或上行用户消息做查找替换。字段：find（正则）、replace（支持 $1..$9 与 {{match}}）、placement（AI_OUTPUT/USER_INPUT）、markdownOnly。导入前会校验正则可编译。",
             parametersJson = params(
                 mapOf(
-                    "json" to mapOf("type" to "string", "description" to "正则规则 JSON，单条 {\"id\",\"name\",\"find\",\"replace\",\"placement\":[]} 或数组 [...]")
+                    "json" to mapOf("type" to "string", "description" to "正则规则 JSON 字符串，单条或数组。若 JSON 较长或含大量引号，建议先 file_write 存到工作区再用 path 引用，避免转义出错"),
+                    "path" to mapOf("type" to "string", "description" to "工作区文件路径（如 /workspace/regex.json），与 json 二选一，文件内容为正则规则 JSON")
                 ),
-                listOf("json")
+                listOf()
             ),
             implementationJson = "{}"
         ),

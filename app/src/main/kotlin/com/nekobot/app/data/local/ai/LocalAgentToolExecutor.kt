@@ -1070,7 +1070,8 @@ internal class LocalAgentToolExecutor(
     }
 
     private fun presetImport(args: Map<String, Any>): Map<String, Any> {
-        val json = args.string("json") ?: return failure("缺少 json 参数")
+        val json = resolveJsonOrPath(args)
+            ?: return failure("缺少参数：请提供 json（JSON 字符串）或 path（工作区文件路径）")
         val pm = com.nekobot.app.data.local.ai.preset.PresetManager
         val r = pm.parse(json)
         return if (r.isSuccess) {
@@ -1182,7 +1183,8 @@ internal class LocalAgentToolExecutor(
     }
 
     private fun regexImport(args: Map<String, Any>): Map<String, Any> {
-        val json = args.string("json") ?: return failure("缺少 json 参数")
+        val json = resolveJsonOrPath(args)
+            ?: return failure("缺少参数：请提供 json（JSON 字符串）或 path（工作区文件路径）")
         val rm = com.nekobot.app.data.local.ai.preset.RegexManager
         val r = rm.parse(json)
         return if (r.isSuccess) {
@@ -2095,6 +2097,16 @@ internal class LocalAgentToolExecutor(
             "size" to if (target.isFile) target.length() else 0L,
             "last_modified" to target.lastModified()
         )
+    }
+
+        /** preset_import / regex_import 通用：优先 json 字符串，否则从工作区 path 读文件。 */
+    private fun resolveJsonOrPath(args: Map<String, Any>): String? {
+        args.string("json")?.takeIf { it.isNotBlank() }?.let { return it }
+        val p = args.string("path")?.takeIf { it.isNotBlank() } ?: return null
+        val f = resolveWorkspacePath(p, allowRoot = true)
+            ?: return null
+        if (!f.isFile) return null
+        return runCatching { f.readText(Charsets.UTF_8) }.getOrNull()
     }
 
     private fun resolveWorkspacePath(path: String, allowRoot: Boolean = false): File? {

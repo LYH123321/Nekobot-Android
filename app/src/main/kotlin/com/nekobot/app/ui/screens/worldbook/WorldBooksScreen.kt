@@ -83,9 +83,44 @@ class WorldBooksViewModel : com.nekobot.app.ui.BaseViewModel() {
         )
     }
 
+    /** 导入失败提示 */
+    fun importFailed(msg: String) = showToast(msg)
+
+    /** 从角色卡 JSON 提取内嵌世界书导入 */
+    fun importWorldBookFromCard(cardJson: String) {
+        launchResult(
+            block = {
+                val imported = com.nekobot.app.data.local.ai.WorldBookImporter.fromCharacterCard(cardJson)
+                    ?: return@launchResult com.nekobot.app.data.repository.Resource.Error<WorldBookRequest>("这张卡没有内嵌世界书")
+                val created = unified.createWorldBook(
+                    WorldBookRequest(name = imported.name, description = imported.description)
+                )
+                val bookId = (created as? com.nekobot.app.data.repository.Resource.Success)
+                    ?.data?.id
+                    ?: throw IllegalStateException("创建世界书失败")
+                for (e in imported.entries) {
+                    unified.createEntry(bookId, com.nekobot.app.data.model.WorldBookEntryRequest(
+                        keys = e.keys, content = e.content, comment = e.comment,
+                        enabled = e.enabled, constant = e.constant, selective = e.selective,
+                        insertionOrder = e.insertionOrder, priority = e.priority,
+                        position = e.position, caseSensitive = e.caseSensitive,
+                        matchMode = e.matchMode, displayIndex = e.displayIndex
+                    ))
+                }
+                com.nekobot.app.data.repository.Resource.Success(imported.entries.size)
+            },
+            onSuccess = { count ->
+                load()
+                showToast("导入成功：${'$'}{count} 条")
+            },
+            onError = { msg -> showToast("导入失败：${'$'}msg") }
+        )
+    }
+
     /** 导入世界书 JSON（ST 独立世界书 / 角色卡内嵌书） */
     fun importWorldBook(json: String) {
         launchResult(
+            onError = { msg -> showToast("导入失败：${'$'}msg") },
             block = {
                 val imported = WorldBookImporter.fromJson(json)
                 val created = unified.createWorldBook(
@@ -171,10 +206,26 @@ fun WorldBooksScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            runCatching {
-                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
-            }.onSuccess { json ->
-                if (json.isNotBlank()) viewModel.importWorldBook(json)
+            val bytes = try {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            } catch (e: Exception) {
+                viewModel.importFailed("读取文件失败：${'$'}{e.message}")
+                null
+            }
+            if (bytes != null) {
+                if (bytes.size > 8 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte()) {
+                    // PNG：提取内嵌角色卡 JSON 中的世界书
+                    val cardJson = com.nekobot.app.data.local.ai.WorldBookImporter.extractCardJsonFromPng(bytes)
+                    if (cardJson != null) {
+                        viewModel.importWorldBookFromCard(cardJson)
+                    } else {
+                        viewModel.importFailed("PNG 中没有角色卡数据")
+                    }
+                } else {
+                    val json = String(bytes, Charsets.UTF_8)
+                    if (json.isNotBlank()) viewModel.importWorldBook(json)
+                    else viewModel.importFailed("文件内容为空")
+                }
             }
         }
     }
@@ -285,7 +336,7 @@ fun WorldBooksScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("导入 JSON") },
+                                text = { Text("导入（JSON / PNG）") },
                                 leadingIcon = { Icon(Icons.Filled.UploadFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                 onClick = {
                                     showAddMenu = false

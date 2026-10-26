@@ -91,7 +91,7 @@ class WorldBooksViewModel : com.nekobot.app.ui.BaseViewModel() {
         launchResult(
             block = {
                 val imported = com.nekobot.app.data.local.ai.WorldBookImporter.fromCharacterCard(cardJson)
-                    ?: return@launchResult com.nekobot.app.data.repository.Resource.Error<WorldBookRequest>("这张卡没有内嵌世界书")
+                    ?: return@launchResult com.nekobot.app.data.repository.Resource.Error("这张卡没有内嵌世界书")
                 val created = unified.createWorldBook(
                     WorldBookRequest(name = imported.name, description = imported.description)
                 )
